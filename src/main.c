@@ -42,26 +42,103 @@ void exibirProduto(Produto p) {
     printf("Quantidade: %d | Preço: R$ %.2f\n", p.quantidade, p.preco);
 }
 
+
+void listarProdutos() {
+    FILE *arquivo = fopen("data/produtos.dat", "rb");
+    Produto p;
+
+    if (!arquivo) {
+        printf("Erro ao abrir o arquivo.\n");
+        return;
+    }
+
+    printf("\n--- Lista de Produtos ---\n");
+    while (fread(&p, sizeof(Produto), 1, arquivo)) {
+        exibirProduto(p);
+    }
+
+    fclose(arquivo);
+}
+
+void alterarEstoque(int tipo) {
+    int codigo, quantidade, encontrado = 0;
+    Produto p;
+
+    FILE *arquivo = fopen("data/produtos.dat", "rb+");
+
+    if (!arquivo) {
+        printf("Arquivo não encontrado.\n");
+        return;
+    }
+
+    printf("Informe o código do produto: ");
+    scanf("%d", &codigo);
+
+    while (fread(&p, sizeof(Produto), 1, arquivo)) {
+        if (p.codigo == codigo) {
+            encontrado = 1;
+            printf("Produto encontrado:\n");
+            exibirProduto(p);
+
+            printf("Quantidade para %s: ", tipo == 1 ? "entrada" : "saída");
+            scanf("%d", &quantidade);
+
+            if (tipo == 1) {
+                p.quantidade += quantidade;
+            } else {
+                if (quantidade > p.quantidade) {
+                    printf("Erro: Estoque insuficiente.\n");
+                    fclose(arquivo);
+                    return;
+                }
+                p.quantidade -= quantidade;
+            }
+
+            fseek(arquivo, -sizeof(Produto), SEEK_CUR);
+            fwrite(&p, sizeof(Produto), 1, arquivo);
+            printf("Estoque atualizado com sucesso!\n");
+            break;
+        }
+    }
+
+    if (!encontrado) {
+        printf("Produto não encontrado.\n");
+    }
+
+    fclose(arquivo);
+}
+
+
 int main() {
     int opcao;
 
     do {
-        printf("\n1 - Cadastrar Produto\n0 - Sair\nOpção: ");
+        printf("\n1 - Cadastrar Produto\n2 - Listar Produtos\n3 - Entrada de Produto\n4 - Saída de Produto\n0 - Sair\nOpção: ");
         scanf("%d", &opcao);
         getchar(); // Limpa buffer
-
+    
         switch (opcao) {
             case 1:
                 cadastrarProduto();
                 break;
+            case 2:
+                listarProdutos();
+                break;
+            case 3:
+                alterarEstoque(1);
+                break;
+            case 4:
+                alterarEstoque(2);
+                break;            
             case 0:
                 printf("Encerrando...\n");
                 break;
             default:
                 printf("Opção inválida.\n");
         }
-
+    
     } while (opcao != 0);
+    
 
     return 0;
 }
